@@ -1,0 +1,11 @@
+/* pages/bind/bind.wxss */
+.account-input{
+  width: 500rpx;
+  border-bottom: 1px solid #666666;
+  margin-bottom: 70rpx;
+}
+.bind-btn{
+  margin-top: 50rpx;
+  width: 500rpx;
+  /* border-color: #ff7103; */
+}

@@ -1,0 +1,12 @@
+<!--pages/bind/bind.wxml-->
+<view class="container">
+
+  <view class="section">
+    <input bindinput="setName" class="account-input" placeholder="姓名" auto-focus/>
+  </view>
+  <view class="section">
+    <input bindinput="setPhone"  class="account-input" placeholder="手机号" />
+  </view>
+
+  <button bindtap='bind' class='bind-btn' type='default' size='default' plain='true'>绑定</button>
+</view>

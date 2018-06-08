@@ -1,0 +1,26 @@
+/**index.wxss**/
+.userinfo{
+  width: 100%;
+  text-align: center;
+}
+.userinfo .username{
+  display: block;
+  font-size: 50rpx;
+}
+
+.userinfo .userphone{
+  display: block;
+  font-size: 30rpx;
+  color: #666666
+}
+
+.current-course {
+  margin-top: 30rpx;
+}
+
+.sign-btn {
+  margin-top: 30rpx;
+}
+.location-btn{
+  margin-top: 30rpx;
+}

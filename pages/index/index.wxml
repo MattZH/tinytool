@@ -1,0 +1,27 @@
+<!--index.wxml-->
+<view class="container">
+  <button wx:if="{{!isLogin}}" bindtap='toBind' type='primary'>绑定身份</button>
+  <view wx:if="{{isLogin}}" class='userinfo'>
+    <text class='username'>{{name}}</text>
+    <text class='userphone'>{{phone}}</text>
+  </view>
+  <!-- <view class="userinfo">
+    <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button>
+    <block wx:else>
+      <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
+      <text class="userinfo-nickname">{{userInfo.nickName}}</text>
+    </block>
+  </view> -->
+  <!-- <button bindtap='getCourses'>获取课表</button> -->
+  <view wx:if="{{isLogin}}" class='current-course'>{{ course != '' ? '当前课程' : '现在还没有上课'}}</view>
+  <view>
+    <block wx:if="{{course != ''}}">
+      <view>{{course.name}}</view>
+      <view>{{course.teacher}}</view>
+      <view>{{course.beginTime}}</view>
+      <view>{{course.endTime}}</view>
+    </block>
+  </view>
+  <button wx:if="{{isLogin}}" disabled='{{isCheck}}' bindtap='sign' class='sign-btn' type='primary' size='default' plain='true'>{{ isCheck ? '已签到' : '签到'}}</button>
+  <button wx:if="{{needSetLocation}}" class='location-btn' open-type='openSetting' type='primary'>设置位置</button>
+</view>
