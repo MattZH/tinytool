@@ -17,7 +17,7 @@ Page({
   onLoad: function (options) {
   },
 
-  onShow: function(){
+  onShow: function () {
     console.log(getCurrentPages())
   },
 
@@ -66,28 +66,28 @@ Page({
           },
           success: (res) => {
             wx.hideLoading()
-            wx.showToast({
-              title: '绑定成功',
-              icon: "success",
-              mask: true,
-            })
-            setTimeout(() => {
-              if (res.data.code == 0) {
-                wx.setStorage({
-                  key: "session",
-                  data: res.data.data.session
-                })
+            if (res.data.code == 0) {
+              wx.setStorage({
+                key: "session",
+                data: res.data.data.session
+              })
+              wx.showToast({
+                title: '绑定成功',
+                icon: "success",
+                mask: true,
+              })
+              setTimeout(() => {
                 wx.navigateBack({
                   delta: 1
                 })
-              } else {
-                wx.showToast({
-                  title: res.data.msg,
-                  icon: "none",
-                  mask: true,
-                })
-              }
-            },1500)
+              }, 1500)
+            } else {
+              wx.showToast({
+                title: res.data.msg,
+                icon: "none",
+                mask: true,
+              })
+            }
           }
         })
       }

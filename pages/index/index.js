@@ -8,10 +8,12 @@ Page({
     name: '',
     phone: '',
     needSetLocation: false,
+    needSystemLocation: false,
     course: '',
     location: '',
     isCheck: false,
-    isLogin: false
+    isLogin: false,
+    isBind: true
   },
   //事件处理函数
   bindViewTap: function () {
@@ -21,13 +23,58 @@ Page({
   },
   onLoad: function () {
     // 登录
+    // if (!wx.getStorageSync('session')) {
+    //   this.login()
+    // } else {
+    //   wx.checkSession({
+    //     success: () => {
+    //       //session_key 未过期，并且在本生命周期一直有效
+    //       this.getCourse()
+    //     },
+    //     fail: () => {
+    //       // session_key 已经失效，需要重新执行登录流程
+    //       console.log('session_key失效')
+    //       this.login() //重新登录
+    //     }
+    //   })
+    // }
+  },
+
+  onShow: function () {
     if (!wx.getStorageSync('session')) {
       this.login()
     } else {
       wx.checkSession({
         success: () => {
           //session_key 未过期，并且在本生命周期一直有效
+          this.getUser()
           this.getCourse()
+          this.setData({
+            isLogin: true,
+            isBind: true
+          })
+          this.verifyLocation().then(res => {
+            if (res.code == 1) {
+              this.setData({
+                needSetLocation: false,
+                needSystemLocation: true,
+                location: ''
+              })
+              return
+            } else if (res.code == 2) {
+              this.setData({
+                needSetLocation: true,
+                needSystemLocation: false,
+                location: ''
+              })
+              return
+            }
+            this.setData({
+              needSetLocation: false,
+              needSystemLocation: false,
+              location: res.data
+            })
+          })
         },
         fail: () => {
           // session_key 已经失效，需要重新执行登录流程
@@ -38,30 +85,11 @@ Page({
     }
   },
 
-  onShow: function () {
-    this.getUser()
-
-    if (wx.getStorageSync('session')) {
-      this.getCourse()
-      this.setData({
-        isLogin: true
-      })
-      this.verifyLocation().then(res => {
-        this.setData({
-          needSetLocation: res != '' ? false : true,
-          location: res
-        })
-      })
-    }
-
-  },
-  getUserInfo: function (e) {
-    console.log(e)
-    app.globalData.userInfo = e.detail.userInfo
-    this.setData({
-      userInfo: e.detail.userInfo,
-      hasUserInfo: true
-    })
+  onPullDownRefresh: function(){
+    // wx.showNavigationBarLoading()
+      // wx.hideNavigationBarLoading()
+    this.getCourse()
+    wx.stopPullDownRefresh()
   },
   login() {
     wx.showLoading({
@@ -98,22 +126,25 @@ Page({
             } else if (res.data.code == 1003) {
               setTimeout(() => {
                 wx.hideLoading()
-
+                this.setData({
+                  isBind: false,
+                  isLogin: false
+                })
                 // 判断当前是不是绑定页，防止多次弹出绑定页
                 let pages = getCurrentPages()
                 if (pages[pages.length - 1].route.indexOf('bind') != -1) {
                   return
                 }
-                wx.showToast({
-                  title: res.data.msg,
-                  icon: "none",
-                  mask: false,
-                })
-                setTimeout(() => {
-                  wx.navigateTo({
-                    url: '../../pages/bind/bind',
-                  })
-                }, 1500)
+                // wx.showToast({
+                //   title: res.data.msg,
+                //   icon: "none",
+                //   mask: false,
+                // })
+                // setTimeout(() => {
+                //   wx.navigateTo({
+                //     url: '../../pages/bind/bind',
+                //   })
+                // }, 1500)
               }, 1000)
             }
           }
@@ -140,7 +171,7 @@ Page({
               phone: res.data.data.student[0].phone
             })
           } else {
-            if(res.data.code != 1003){
+            if (res.data.code != 1003) {
               wx.showToast({
                 title: res.data.msg,
                 icon: 'none',
@@ -163,14 +194,16 @@ Page({
   },
   getCourse() {
     if (wx.getStorageSync('session')) {
+      // console.log('get course')
       wx.request({
         url: app.globalData.url + '/course',
         header: {
           'session': wx.getStorageSync('session')
         },
         success: res => {
+          wx.stopPullDownRefresh()
           if (res.data.code == 0) {
-            let course
+            let course = ''
             if (res.data.data.course.length > 0) {
               course = res.data.data.course[0]
               course.beginTime = util.formatTime(course.beginTime)
@@ -179,7 +212,12 @@ Page({
                 course: course
               })
               this.getCheckStatus()
+            } else {
+              this.setData({
+                course: ''
+              })
             }
+            // console.log('课程' + course)
           } else {
             wx.showToast({
               title: res.data.msg,
@@ -194,6 +232,7 @@ Page({
         }
       })
     } else {
+      wx.stopPullDownRefresh()
       this.login()
     }
   },
@@ -219,7 +258,7 @@ Page({
       title: '签到中',
     })
     this.verifyLocation().then(res => {
-      if (res != '') {
+      if (res.code == 0) {
         wx.request({
           url: app.globalData.url + '/sign',
           method: 'POST',
@@ -227,8 +266,8 @@ Page({
             'session': wx.getStorageSync('session')
           },
           data: {
-            latitude: res.latitude,
-            longitude: res.longitude,
+            latitude: res.data.latitude,
+            longitude: res.data.longitude,
           },
           success: res => {
             if (res.data.code == 0) {
@@ -236,17 +275,32 @@ Page({
                 isCheck: true
               })
               wx.showToast({
-                title: '签到成功!' + res.data.data.distance + 'm',
+                title: '签到成功!',
                 icon: 'success',
               })
             } else {
               wx.showToast({
-                title: res.data.msg + '/r/n距离上课地点' + res.data.data.distance + 'm',
+                title: res.data.msg + ' 距离上课地点' + res.data.data.distance + 'm',
                 icon: 'none',
               })
             }
           }
         })
+      } else {
+        if (res.code == 1) {
+          this.setData({
+            needSetLocation: false,
+            needSystemLocation: true,
+            location: ''
+          })
+        } else if (res.code == 2) {
+          this.setData({
+            needSetLocation: true,
+            needSystemLocation: false,
+            location: ''
+          })
+        }
+        wx.hideLoading()
       }
     })
   },
@@ -265,11 +319,26 @@ Page({
                   type: 'wgs48',
                   success: res => {
                     console.log('获取成功')
-                    resolve(res)
+                    resolve({
+                      code: 0, // 位置获取成功
+                      data: res
+                    })
                   },
                   fail: () => {
                     console.log('获取位置失败')
-                    resolve('')
+                    console.log('请确定手机开启微信定位权限')
+                    wx.showToast({
+                      title: "请确定手机开启微信定位权限后重新打开小程序",
+                      icon: "none",
+                      mask: true,
+                      duration: 3000
+                    })
+                    setTimeout(() => {
+                      resolve({
+                        code: 1, // 微信没有位置权限
+                        data: ''
+                      })
+                    }, 3000)
                   }
                 })
               },
@@ -281,7 +350,12 @@ Page({
                   mask: true,
                   duration: 3000
                 })
-                resolve('')
+                setTimeout(() => {
+                  resolve({
+                    code: 2, // 用户拒绝授权
+                    data: ''
+                  })
+                }, 3000)
               }
             })
           } else {
@@ -290,11 +364,25 @@ Page({
               type: 'wgs84',
               success: (res) => {
                 console.log('获取成功')
-                resolve(res)
+                resolve({
+                  code: 0, // 位置获取成功
+                  data: res
+                })
               },
               fail: () => {
-                console.log('fail')
-                resolve('')
+                console.log('获取位置失败')
+                wx.showToast({
+                  title: "请确定手机开启微信定位权限后重新打开小程序",
+                  icon: "none",
+                  mask: true,
+                  duration: 3000
+                })
+                setTimeout(() => {
+                  resolve({
+                    code: 1, // 微信没有位置权限
+                    data: ''
+                  })
+                }, 3000)
               }
             })
           }

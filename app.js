@@ -32,7 +32,8 @@ App({
   },
   globalData: {
     userInfo: null,
-    url: 'http://10.18.92.101:8080'
+    url: 'http://10.18.92.150:8090',
+    showBind: false
   },
   
 })

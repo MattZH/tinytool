@@ -1,12 +1,15 @@
 <!--pages/bind/bind.wxml-->
 <view class="container">
 
-  <view class="section">
-    <input bindinput="setName" class="account-input" placeholder="姓名" auto-focus/>
+  <view class="section" style='margin-bottom: 30rpx;'>
+    <text class='bind-label'>真实姓名</text>
+    <input bindinput="setName" class="bind-input" placeholder="" auto-focus/>
   </view>
   <view class="section">
-    <input bindinput="setPhone"  class="account-input" placeholder="手机号" />
+    <text class='bind-label'>报名手机号</text>
+    <input bindinput="setPhone" class="bind-input" placeholder="" value="+86"/>
+    <text class='phone-tip'>填写手机号码请加区号(例:+86)</text>
   </view>
 
-  <button bindtap='bind' class='bind-btn' type='default' size='default' plain='true'>绑定</button>
+  <button bindtap='bind' class='bind-btn' type='primary' size='default'>确认绑定</button>
 </view>

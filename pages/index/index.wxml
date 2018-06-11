@@ -1,27 +1,39 @@
 <!--index.wxml-->
-<view class="container">
-  <button wx:if="{{!isLogin}}" bindtap='toBind' type='primary'>绑定身份</button>
-  <view wx:if="{{isLogin}}" class='userinfo'>
+<view class="container" wx:if="{{!isBind}}">
+  <view class='bind-tip'>首次登录小助手请先绑定个人信息</view>
+  <view class='img-wrapper'>
+    <image class='bind-img' src='./id.png'></image>
+  </view>
+  <button bindtap='toBind' type='primary' class='to-bind-btn'>立即绑定</button>
+</view>
+<view wx:if="{{isLogin}}" class="container">
+  <view class='userinfo'>
     <text class='username'>{{name}}</text>
     <text class='userphone'>{{phone}}</text>
   </view>
-  <!-- <view class="userinfo">
-    <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button>
-    <block wx:else>
-      <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
-      <text class="userinfo-nickname">{{userInfo.nickName}}</text>
-    </block>
-  </view> -->
-  <!-- <button bindtap='getCourses'>获取课表</button> -->
-  <view wx:if="{{isLogin}}" class='current-course'>{{ course != '' ? '当前课程' : '现在还没有上课'}}</view>
-  <view>
-    <block wx:if="{{course != ''}}">
-      <view>{{course.name}}</view>
-      <view>{{course.teacher}}</view>
-      <view>{{course.beginTime}}</view>
-      <view>{{course.endTime}}</view>
-    </block>
+  <view class='course-panel'>
+    <view class='current-course'>当前课程</view>
+    <view wx:if="{{course != ''}}">
+      <view class='info'>
+        <view class='info-title'>课程名称</view>
+        <view class='info-content'>{{course.name}}</view>
+      </view>
+      <view class='info'>
+        <view class='info-title'>授课人</view>
+        <view class='info-content'>{{course.teacher}}</view>
+      </view>
+      <view class='info'>
+        <view class='info-title'>开始时间</view>
+        <view class='info-content'>{{course.beginTime}}</view>
+      </view>
+      <view class='info'>
+        <view class='info-title'>结束时间</view>
+        <view class='info-content'>{{course.endTime}}</view>
+      </view>
+    </view>
+    <view wx:else class='no-course'>当前时段没有课程，无法签到哦~</view>
   </view>
-  <button wx:if="{{isLogin}}" disabled='{{isCheck}}' bindtap='sign' class='sign-btn' type='primary' size='default' plain='true'>{{ isCheck ? '已签到' : '签到'}}</button>
+  <button wx:if="{{course != ''}}" disabled='{{isCheck}}' bindtap='sign' class='sign-btn' type='primary' size='default'>{{ isCheck ? '已签到' : '签到'}}</button>
+  <button wx:else class='sign-btn' type='default' size='default' disabled='true' plain='true'>签到</button>
   <button wx:if="{{needSetLocation}}" class='location-btn' open-type='openSetting' type='primary'>设置位置</button>
 </view>
