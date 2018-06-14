@@ -23,30 +23,14 @@ Page({
   },
   onLoad: function () {
     // 登录
-    // if (!wx.getStorageSync('session')) {
-    //   this.login()
-    // } else {
-    //   wx.checkSession({
-    //     success: () => {
-    //       //session_key 未过期，并且在本生命周期一直有效
-    //       this.getCourse()
-    //     },
-    //     fail: () => {
-    //       // session_key 已经失效，需要重新执行登录流程
-    //       console.log('session_key失效')
-    //       this.login() //重新登录
-    //     }
-    //   })
-    // }
   },
 
   onShow: function () {
-    if (!wx.getStorageSync('session')) {
-      this.login()
-    } else {
+    this.getSession().then(session => {
       wx.checkSession({
         success: () => {
           //session_key 未过期，并且在本生命周期一直有效
+          console.log('[onShow]', 'come in!')
           this.getUser()
           this.getCourse()
           this.setData({
@@ -82,12 +66,14 @@ Page({
           this.login() //重新登录
         }
       })
-    }
+    }).catch(error => {
+      this.login()
+    })
   },
 
-  onPullDownRefresh: function(){
+  onPullDownRefresh: function () {
     // wx.showNavigationBarLoading()
-      // wx.hideNavigationBarLoading()
+    // wx.hideNavigationBarLoading()
     this.getCourse()
     wx.stopPullDownRefresh()
   },
@@ -113,15 +99,19 @@ Page({
                   icon: "success",
                   mask: true,
                 })
-                setTimeout(() => {
-                  wx.setStorage({
-                    key: "session",
-                    data: res.data.data.session
-                  })
-                  wx.reLaunch({
-                    url: '../../pages/index/index',
-                  })
-                }, 1500)
+
+                wx.setStorage({
+                  key: "session",
+                  data: res.data.data.session,
+                  success: () => {
+                    setTimeout(() => {
+                      wx.reLaunch({
+                        url: '../../pages/index/index',
+                      })
+                    }, 1500)
+                  }
+                })
+
               }, 1000)
             } else if (res.data.code == 1003) {
               setTimeout(() => {
@@ -147,6 +137,13 @@ Page({
                 // }, 1500)
               }, 1000)
             }
+          },
+          fail: error => {
+            wx.showToast({
+              title: "网络异常",
+              icon: "none",
+              mask: true,
+            })
           }
         })
       },
@@ -157,15 +154,16 @@ Page({
     })
   },
   getUser() {
-    if (wx.getStorageSync('session')) {
+    this.getSession().then(session => {
       wx.request({
         url: app.globalData.url + '/student',
         method: 'GET',
         header: {
-          'session': wx.getStorageSync('session')
+          'session': session
         },
         success: res => {
           if (res.data.code == 0) {
+            console.log('用户信息获取成功')
             this.setData({
               name: res.data.data.student[0].name,
               phone: res.data.data.student[0].phone
@@ -179,26 +177,43 @@ Page({
             }
             setTimeout(() => {
               if (res.data.code == 1001) {
-                wx.removeStorageSync('session')
-                this.login()
+                wx.removeStorage({
+                  key: 'session',
+                  success: res => {
+                    this.login()
+                  }
+                })
               }
               if (res.data.code == 1003) {
-                wx.removeStorageSync('session')
-                this.login()
+                wx.removeStorage({
+                  key: 'session',
+                  success: res => {
+                    this.login()
+                  }
+                })
               }
             }, 1500)
           }
+        },
+        fail: error => {
+          wx.showToast({
+            title: "网络异常",
+            icon: "none",
+            mask: true,
+          })
         }
       })
-    }
+    }, err => {
+      console.log('[getUser]error: ', err)
+    })
   },
   getCourse() {
-    if (wx.getStorageSync('session')) {
+    this.getSession().then(session => {
       // console.log('get course')
       wx.request({
         url: app.globalData.url + '/course',
         header: {
-          'session': wx.getStorageSync('session')
+          'session': session
         },
         success: res => {
           wx.stopPullDownRefresh()
@@ -225,16 +240,28 @@ Page({
               duration: 2000
             })
             if (res.data.code == 1001) {
-              wx.removeStorageSync('session')
-              this.login()
+              wx.removeStorage({
+                key: 'session',
+                success: res => {
+                  this.login()
+                }
+              })
             }
           }
+        },
+        fail: error => {
+          wx.showToast({
+            title: "网络异常",
+            icon: "none",
+            mask: true,
+          })
         }
       })
-    } else {
+    }).catch(error => {
       wx.stopPullDownRefresh()
       this.login()
-    }
+    })
+
   },
   sign() {
     if (!this.data.isLogin) {
@@ -259,32 +286,41 @@ Page({
     })
     this.verifyLocation().then(res => {
       if (res.code == 0) {
-        wx.request({
-          url: app.globalData.url + '/sign',
-          method: 'POST',
-          header: {
-            'session': wx.getStorageSync('session')
-          },
-          data: {
-            latitude: res.data.latitude,
-            longitude: res.data.longitude,
-          },
-          success: res => {
-            if (res.data.code == 0) {
-              this.setData({
-                isCheck: true
-              })
+        this.getSession().then(session => {
+          wx.request({
+            url: app.globalData.url + '/sign',
+            method: 'POST',
+            header: {
+              'session': session
+            },
+            data: {
+              latitude: res.data.latitude,
+              longitude: res.data.longitude,
+            },
+            success: res => {
+              if (res.data.code == 0) {
+                this.setData({
+                  isCheck: true
+                })
+                wx.showToast({
+                  title: '签到成功!',
+                  icon: 'success',
+                })
+              } else {
+                wx.showToast({
+                  title: res.data.msg + ' 距离上课地点' + res.data.data.distance + 'm',
+                  icon: 'none',
+                })
+              }
+            },
+            fail: error => {
               wx.showToast({
-                title: '签到成功!',
-                icon: 'success',
-              })
-            } else {
-              wx.showToast({
-                title: res.data.msg + ' 距离上课地点' + res.data.data.distance + 'm',
-                icon: 'none',
+                title: "网络异常",
+                icon: "none",
+                mask: true,
               })
             }
-          }
+          })
         })
       } else {
         if (res.code == 1) {
@@ -391,24 +427,51 @@ Page({
     })
   },
   getCheckStatus() {
-    wx.request({
-      url: app.globalData.url + '/checkstatus',
-      method: 'GET',
-      header: {
-        'session': wx.getStorageSync('session')
-      },
-      success: res => {
-        if (res.data.code == 0) {
-          this.setData({
-            isCheck: res.data.data.status
+    // 获取签到状态
+    this.getSession().then(session => {
+      wx.request({
+        url: app.globalData.url + '/checkstatus',
+        method: 'GET',
+        header: {
+          'session': session
+        },
+        success: res => {
+          if (res.data.code == 0) {
+            // 获取签到状态
+            // console.log(res.data.data.status)
+            this.setData({
+              isCheck: res.data.data.status
+            })
+          }
+        },
+        fail: error => {
+          wx.showToast({
+            title: "网络异常",
+            icon: "none",
+            mask: true,
           })
         }
-      }
+      })
     })
   },
   toBind() {
     wx.navigateTo({
       url: '../../pages/bind/bind',
     })
+  },
+  getSession() {
+    return new Promise((resolve, reject) => {
+      wx.getStorage({
+        key: 'session',
+        success: res => {
+          // console.log('session获取成功')
+          resolve(res.data)
+        },
+        fail: error => {
+          reject(error)
+        }
+      })
+    })
   }
 })
+
